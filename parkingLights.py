@@ -81,7 +81,7 @@ def measure():
                 distance = 0
         #else: #didn't catch start of echo, abort
         # distance = 0 (changed to just not update it)
-        print distance
+        #print distance
         time.sleep(0.2)
 
 if __name__ == '__main__':
