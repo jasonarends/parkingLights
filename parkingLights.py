@@ -1,23 +1,26 @@
 #!/usr/bin/env python2.7
 #parkingLights.py
-import threading, logging, time
+import threading, logging, time, signal
 from blinkt import set_pixel, set_brightness, show, clear
 import colorsys
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
+import pigpio
 
 def gpioSetup():
     #setup GPIO
-    global GPIO_TRIG, GPIO_ECHO
-    GPIO.setmode(GPIO.BCM)
+    global GPIO, GPIO_TRIG, GPIO_ECHO
+    GPIO = pigpio.pi()
+    #GPIO.setmode(GPIO.BCM)
     GPIO_TRIG = 22
     GPIO_ECHO = 25
 
-    GPIO.setup(GPIO_TRIG, GPIO.OUT)
-    GPIO.setup(GPIO_ECHO, GPIO.IN)
+    GPIO.set_mode(GPIO_TRIG, pigpio.OUTPUT)
+    GPIO.set_mode(GPIO_ECHO, pigpio.INPUT)
 
 def colors():
     global distance, speed
     speed = 0.05
+    distance = 0
     while True:
         for i in range(7,0,-1):
             #print distance
@@ -49,38 +52,50 @@ def colors():
             show()
             time.sleep(speed)
 
+def cbfStart(gpio, level, tick):
+    global startTick
+    startTick = tick
+
+def cbfEnd(gpio, level, tick):
+    global endTick
+    endTick = tick
+
 def measure():
-    global GPIO_TRIG, GPIO_ECHO
-    
-    # set trigger to high
-    GPIO.output(GPIO_TRIG, True)
+    global GPIO_TRIG, GPIO_ECHO, GPIO, startTick, endTick, distance
+    # set to low to init
 
-    # set trigger to low after 0.01ms
-    time.sleep(0.00001)
-    GPIO.output(GPIO_TRIG, False)
+    startEcho = GPIO.callback(GPIO_ECHO, pigpio.RISING_EDGE, cbfStart)
+    endEcho = GPIO.callback(GPIO_ECHO, pigpio.FALLING_EDGE, cbfEnd)
+    #echoTally = GPIO.callback(GPIO_ECHO, pigpio.FALLING_EDGE)
+    startTick = GPIO.get_current_tick()
+    endTick = startTick
 
-    startTime = time.time()
-    
-    GPIO.wait_for_edge(GPIO_ECHO, GPIO_RISING, timeout=1000)
-    stopTime = time.time()
-
-    timeElapsed = stopTime - startTime
-    measurement = (timeElapsed * 34300) / 2
-
-    return measurement
+    while True:
+        GPIO.gpio_trigger(GPIO_TRIG, 12, 1)
+        if GPIO.wait_for_edge(GPIO_ECHO, pigpio.FALLING_EDGE, 0.300):
+            ticksElapsed = pigpio.tickDiff(startTick, endTick)
+            measurement = ticksElapsed / 58
+            distance = measurement
+        else:
+                print "missed falling edge"
+                distance = 0
+        #else: #didn't catch start of echo, abort
+        # distance = 0 (changed to just not update it)
+        print distance
+        time.sleep(0.2)
 
 if __name__ == '__main__':
-    global distance
+    global GPIO
     try:
+        gpioSetup()
         t = threading.Thread(target=colors)
         t.setDaemon(True)
         t.start()
+        measure()
         while True:
-            distance = measure()
-            print distance
-            time.sleep(0.6)
+            signal.pause()
 
     except KeyboardInterrupt:
         print "Measurement stopped by User"
-        GPIO.cleanup()
+        GPIO.stop()
 
