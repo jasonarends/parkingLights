@@ -5,15 +5,19 @@ from blinkt import set_pixel, set_brightness, show, clear
 import colorsys
 import RPi.GPIO as GPIO
 
-#setup GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO_TRIG = 22
-GPIO_ECHO = 25
+def gpioSetup():
+    #setup GPIO
+    global GPIO_TRIG, GPIO_ECHO
+    GPIO.setmode(GPIO.BCM)
+    GPIO_TRIG = 22
+    GPIO_ECHO = 25
 
-GPIO.setup(GPIO_TRIG, GPIO.OUT)
-GPIO.setup(GPIO_ECHO, GPIO.IN)
+    GPIO.setup(GPIO_TRIG, GPIO.OUT)
+    GPIO.setup(GPIO_ECHO, GPIO.IN)
 
 def colors():
+    global distance, speed
+    speed = 0.05
     while True:
         for i in range(7,0,-1):
             #print distance
@@ -45,14 +49,9 @@ def colors():
             show()
             time.sleep(speed)
 
-distance = 0
-speed = 0.05
-
-t = threading.Thread(target=colors)
-t.setDaemon(True)
-t.start()
-
 def measure():
+    global GPIO_TRIG, GPIO_ECHO
+    
     # set trigger to high
     GPIO.output(GPIO_TRIG, True)
 
@@ -60,11 +59,10 @@ def measure():
     time.sleep(0.00001)
     GPIO.output(GPIO_TRIG, False)
 
-    while GPIO.input(GPIO_ECHO) == 0: #save StartTime
-        startTime = time.time()
-
-    while GPIO.input(GPIO_ECHO) == 1:
-        stopTime = time.time()
+    startTime = time.time()
+    
+    GPIO.wait_for_edge(GPIO_ECHO, GPIO_RISING, timeout=1000)
+    stopTime = time.time()
 
     timeElapsed = stopTime - startTime
     measurement = (timeElapsed * 34300) / 2
@@ -72,7 +70,11 @@ def measure():
     return measurement
 
 if __name__ == '__main__':
+    global distance
     try:
+        t = threading.Thread(target=colors)
+        t.setDaemon(True)
+        t.start()
         while True:
             distance = measure()
             print distance
