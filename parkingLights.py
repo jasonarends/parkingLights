@@ -20,9 +20,10 @@ def gpioSetup():
 def colors():
     global distance
     distance = 0
-    
+
     while True:
         while distance > 800: #testing with max response 800 since i know it usually shows >2000 when empty
+            #print 'pink'
             for i in range(7,0,-1):
                 clear()
                 y = 1.0
@@ -32,8 +33,9 @@ def colors():
                     y = y *0.5
                 show()
                 time.sleep(0.4)
-                
+
         while 400 < distance < 800: #entering garage - green fast 4 dots
+            #print 'green'
             for i in range(7,0,-1):
                 clear()
                 y = 1.0
@@ -43,8 +45,9 @@ def colors():
                     y = y *0.5
                 show()
                 time.sleep(0.1)
-                
+
         while 140 < distance < 400: #entering garage - yellow slower 5 dots
+            #print 'yellow'
             for i in range(7,0,-1):
                 clear()
                 y = 1.0
@@ -56,6 +59,7 @@ def colors():
                 time.sleep(0.2)
 
         while 120 < distance < 140: #entering garage - within range, red slow 6 dots
+            #print 'red slow'
             for i in range(14,0,-1):
                 j = int(i/2)
                 clear()
@@ -66,20 +70,23 @@ def colors():
                     y = y *0.5
                 show()
                 time.sleep(0.25) #updates faster than .5 and changed range to 0-14 but divides it by 2 so only moves half as fast as it updates
-        
-        while 105 < distance < 120: #entering garage - red, stopped
-            for x in range(0,7):
+
+        while 100 < distance < 120: #entering garage - red, stopped
+            #print 'red stop'
+            for x in range(2,7):
                 set_pixel(x, 255, 0, 0)
+            set_pixel(0, 255,255,255)
+            set_pixel(1, 255,255,255)
             show()
             time.sleep(0.1)
-            
-        while distance < 105: #entering garage - green fast 4 dots
-            for i in range(7,0,1):
+
+        while distance < 100: #too far, backup
+            #print 'red backup'
+            for i in range(0,7,1):
                 clear()
                 y = 1.0
                 for x in range(0,6):
-                    r,g,b = [int(c * 255) for c in colorsys.hsv_to_rgb(0.33, 1, y)]
-                    set_pixel((i-x)%8, r, g, b)
+                    set_pixel((i-x)%8, 255, 0, 0)
                     y = y *0.5
                 show()
                 time.sleep(0.1)
