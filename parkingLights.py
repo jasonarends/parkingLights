@@ -32,11 +32,11 @@ def colors():
                 #print 'green'
                 h = 0.33
                 speed = 0.1
-            elif 150 < distance < 300: # change to yellow at 250
+            elif 140 < distance < 300: # change to yellow at 250
                 #print 'yellow'
                 h = 0.17
                 speed = 0.2
-            elif distance < 150: # change to red at 100
+            elif distance < 140: # change to red at 100
                 #print 'red'
                 h = 0.0
                 speed = 0.5
